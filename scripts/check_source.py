@@ -53,6 +53,13 @@ def main() -> int:
         require(token in css, f"mandatory power-up missing from CSS: {token}")
 
     require("lives: 3" in engine, "players do not start with 3 lives")
+    for token in ("power-bomb-pass", "power-block-pass", "power-life"):
+        require(token in engine, f"bonus power-up missing from engine: {token}")
+        require(token in css, f"bonus power-up missing from CSS: {token}")
+    require("makeCoopBot" in engine and "Bomber AI" in engine, "Solo/Co-op AI mode is missing")
+    require('mode === "teams"' in engine, "Team 2v2 mode is missing")
+    require('mode === "ghosts"' in engine and "reviveGhosts" in engine, "after-death ghost interaction is missing")
+    require("dropPowerOnDeath" in engine, "power-up release after death is missing")
     require("spawn_safe" not in engine.lower() or "SPAWN_SAFE" in engine, "spawn-safe configuration is missing")
     require("translate3d" in read("public/js/game/renderer.js"), "entity movement is not using translate3d")
     require("will-change: transform" in css, "moving entities are not compositor-promoted")

@@ -13,6 +13,7 @@ A multiplayer DOM Bomberman for the 01-edu `bomberman-dom` assignment. The proje
 - [📝 About](#-about)
 - [🎮 Game flow](#-game-flow)
 - [💣 Mechanics](#-mechanics)
+- [🎁 Bonus modes](#-bonus-modes)
 - [🌐 Multiplayer and chat](#-multiplayer-and-chat)
 - [⚡ Performance](#-performance)
 - [🧪 Tests and verification](#-tests-and-verification)
@@ -27,6 +28,7 @@ A multiplayer DOM Bomberman for the 01-edu `bomberman-dom` assignment. The proje
 - Go 1.23 or newer
 - a modern browser with WebSocket and ES module support
 - Python 3 for repository validation scripts
+- Node.js 18+ for the JavaScript engine test
 
 ### Clone
 
@@ -86,12 +88,23 @@ Controls:
 - move: `WASD` or arrow keys;
 - place bomb: `Space` or `Enter`.
 
+## 🎁 Bonus modes
+
+The nickname screen keeps **Classic multiplayer** as the default mandatory flow and exposes the bonus features as separate modes so they do not change the core audit behavior. The first player entering an empty room selects the room mode.
+
+- **Solo / Co-op vs AI** — one to four human players fight a server-synchronized Bomber AI. The human side wins when the AI is defeated.
+- **Extra power-ups** — Bomb Pass lets a player walk through bombs, Block Pass lets a player walk through destructible blocks, and 1UP adds one life. These are in addition to mandatory Bomb, Flame and Speed power-ups.
+- **Power-up release after death** — final death releases one owned power-up; a player with no collected power-ups releases a random one.
+- **Team 2v2** — four players are split into Team A (slots 1 and 3) and Team B (slots 2 and 4). Friendly fire does not damage the other teammate, while a player's own bomb still can.
+- **Ghost mode** — a player at zero lives becomes a ghost. Touching another living player restores the ghost with one life; touching a flame as a ghost eliminates that player permanently.
+
 ## 🌐 Multiplayer and chat
 
 The browser uses one WebSocket connection for lobby events, chat, player input and authoritative state snapshots.
 
 The server controls:
 
+- room mode selected by the first player;
 - nickname validation;
 - player slots and the 4-player room cap;
 - player counter;
@@ -124,6 +137,7 @@ Run all automated checks:
 
 ```bash
 go test ./...
+node tests/game-engine.mjs
 python scripts/validate_agent_contracts.py
 python scripts/check_source.py
 ```
@@ -137,7 +151,7 @@ go build ./...
 Format check:
 
 ```bash
-gofmt -w .
+test -z "$(gofmt -l .)"
 ```
 
 ### Manual audit
@@ -155,6 +169,7 @@ Use at least two browser sessions and then repeat with four:
 - zero lives eliminates the player;
 - blocks are destroyed;
 - Bomb, Flame and Speed power-ups can appear;
+- bonus pass/life power-ups, co-op AI, death drops, 2v2 and ghost behavior work in their selected modes;
 - Performance tooling stays around 60 FPS without obvious frame drops;
 - paint/layer activity remains limited during movement.
 
@@ -180,6 +195,8 @@ bomberman-dom/
 ├── scripts/
 │   ├── check_source.py
 │   └── validate_agent_contracts.py
+├── tests/
+│   └── game-engine.mjs
 ├── server/
 │   ├── lobby.go
 │   ├── lobby_test.go
@@ -193,7 +210,7 @@ bomberman-dom/
 
 ## ⚠️ Notes
 
-- The default flow is the mandatory multiplayer assignment; bonus AI modes from `make-your-game` are intentionally kept out of the core lobby.
+- Classic multiplayer is the default mandatory flow; bonus behavior is isolated behind explicit mode selection.
 - The host is authoritative for game simulation. If the host disconnects during a running match, the server ends that match instead of pretending another client has authoritative state it never owned.
 - Browser performance depends on the evaluator machine; use DevTools Performance for the final manual proof.
 

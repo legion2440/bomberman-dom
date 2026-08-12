@@ -3,12 +3,35 @@
   "module_id": "game-engine",
   "purpose": "Authoritative Bomberman simulation, map generation, bombs, flames, lives, power-ups and rendering helpers.",
   "paths": [
-    {"path": "public/js/game/constants.js", "lifecycle": "implemented", "provenance": "authored"},
-    {"path": "public/js/game/engine.js", "lifecycle": "implemented", "provenance": "authored"},
-    {"path": "public/js/game/renderer.js", "lifecycle": "implemented", "provenance": "authored"}
+    {
+      "path": "public/js/game/constants.js",
+      "lifecycle": "implemented",
+      "provenance": "authored"
+    },
+    {
+      "path": "public/js/game/engine.js",
+      "lifecycle": "implemented",
+      "provenance": "authored"
+    },
+    {
+      "path": "public/js/game/renderer.js",
+      "lifecycle": "implemented",
+      "provenance": "authored"
+    },
+    {
+      "path": "tests/game-engine.mjs",
+      "lifecycle": "implemented",
+      "provenance": "authored"
+    }
   ],
-  "contracts": ["docs/protocol.md"],
-  "validators": ["scripts/check_source.py"],
-  "tests": [],
+  "contracts": [
+    "docs/protocol.md"
+  ],
+  "validators": [
+    "scripts/check_source.py"
+  ],
+  "tests": [
+    "tests/game-engine.mjs"
+  ],
   "runtime_evidence": []
 }
