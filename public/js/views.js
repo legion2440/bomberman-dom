@@ -4,7 +4,7 @@ export function viewApp(state, actions, renderer) {
   return h(
     "main",
     { class: "shell" },
-    viewHeader(state),
+    viewHeader(state, actions),
     state.screen === "nickname"
       ? viewNickname(state, actions)
       : state.screen === "lobby"
@@ -13,7 +13,7 @@ export function viewApp(state, actions, renderer) {
   );
 }
 
-function viewHeader(state) {
+function viewHeader(state, actions) {
   return h(
     "header",
     { class: "topbar" },
@@ -22,8 +22,10 @@ function viewHeader(state) {
       "div",
       { class: "top-stats" },
       h("span", {}, `Players ${state.lobbyPlayers.length}/4`),
-      h("span", {}, `FPS ${state.fps}`),
       h("span", { class: `connection ${state.connectionStatus}` }, state.connectionStatus),
+      state.selfId
+        ? h("button", { class: "session-leave", type: "button", on: { click: actions.leave } }, "Leave game")
+        : null,
     ),
   );
 }

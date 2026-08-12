@@ -22,7 +22,6 @@ const store = createStore({
   gameState: null,
   gameRevision: 0,
   result: null,
-  fps: 60,
 });
 
 const renderer = createGameRenderer();
@@ -33,8 +32,6 @@ let simulationWorker = null;
 let hostRenderState = null;
 let lastFrame = performance.now();
 let inputClock = 0;
-let fpsClock = 0;
-let fpsFrames = 0;
 let bombLatched = false;
 
 const network = createNetwork({
@@ -172,6 +169,38 @@ const actions = {
       store.setState({ chatDraft: "" });
     }
   },
+
+  leave() {
+    const state = store.getState();
+    pressed.clear();
+    bombLatched = false;
+    inputClock = 0;
+    isHost = false;
+    stopHostSimulation();
+    network.disconnect();
+    renderer.reset();
+
+    store.setState({
+      screen: "nickname",
+      nicknameDraft: state.nickname || state.nicknameDraft,
+      nickname: "",
+      modeDraft: state.mode || state.modeDraft,
+      mode: "classic",
+      selfId: "",
+      selfSlot: -1,
+      lobbyPlayers: [],
+      lobbyPhase: "waiting",
+      waitRemaining: 0,
+      countdownRemaining: 0,
+      chatMessages: [],
+      chatDraft: "",
+      connectionStatus: "offline",
+      error: "",
+      gameState: null,
+      gameRevision: state.gameRevision + 1,
+      result: null,
+    });
+  },
 };
 
 mount({
@@ -260,15 +289,6 @@ function frame(now) {
         if (network.send("input", input)) bombLatched = false;
       }
     }
-  }
-
-  fpsFrames += 1;
-  fpsClock += dt;
-  if (fpsClock >= 0.5) {
-    const fps = Math.round(fpsFrames / fpsClock);
-    fpsFrames = 0;
-    fpsClock = 0;
-    store.setState({ fps });
   }
 
   requestAnimationFrame(frame);

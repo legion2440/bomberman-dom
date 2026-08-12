@@ -125,14 +125,27 @@ select:focus {
   gap: 7px;
 }
 
-.top-stats span {
+.top-stats span,
+.top-stats .session-leave {
+  min-height: 0;
   border: 2px solid var(--line);
   border-radius: 6px;
   background: var(--paper-strong);
+  box-shadow: none;
   padding: 6px 9px;
   font-size: 12px;
   font-weight: 900;
+  line-height: normal;
   text-transform: uppercase;
+}
+
+.top-stats .session-leave {
+  color: var(--danger);
+}
+
+.top-stats .session-leave:active {
+  transform: none;
+  box-shadow: none;
 }
 
 .connection.online {
@@ -439,6 +452,7 @@ select:focus {
 .tile.power-block-pass,
 .tile.power-life {
   position: relative;
+  container-type: inline-size;
   background: var(--paper-strong);
 }
 
@@ -455,8 +469,10 @@ select:focus {
   border: 2px solid var(--line);
   border-radius: 50%;
   background: var(--gold);
-  font-size: clamp(10px, 1.6vw, 18px);
+  font-size: 30cqi;
   font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .tile.power-bomb::after {
@@ -489,7 +505,6 @@ select:focus {
   content: "1UP";
   background: #a5db9e;
   color: #265c30;
-  font-size: clamp(8px, 1.25vw, 14px);
 }
 
 .entity {

@@ -77,6 +77,9 @@ def main() -> int:
     require("clientwidth" not in renderer.lower(), "renderer reads layout during gameplay")
     require("will-change: transform" in css, "moving players are not compositor-promoted")
     require(not re.search(r"\.entity\s*\{[^}]*will-change", css, re.S), "static entities should not be compositor-promoted")
+    require("container-type: inline-size" in css and "cqi" in css, "power-up labels are not sized relative to their tiles")
+    require("state.fps" not in views and "fpsclock" not in app.lower(), "display-refresh FPS must not be exposed as game FPS")
+    require("actions.leave" in views and "network.disconnect()" in app and "renderer.reset()" in app, "leave-game session cleanup is missing")
     require("require (" not in go_mod and "require\n" not in go_mod, "go.mod must not add third-party dependencies")
 
     # Application code may use framework refs for transform/opacity animation, but should not

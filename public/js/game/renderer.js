@@ -63,8 +63,14 @@ export function createGameRenderer() {
     if (node.style.visibility) node.style.visibility = "";
   }
 
+  function reset() {
+    entityNodes.clear();
+    visualPlayers.clear();
+  }
+
   return {
     setEntityRef,
     renderFrame,
+    reset,
   };
 }
