@@ -5,6 +5,7 @@
   "paths": [
     {"path": "public/index.html", "lifecycle": "implemented", "provenance": "authored"},
     {"path": "public/styles.css", "lifecycle": "implemented", "provenance": "authored"},
+    {"path": "public/bomb-fuse.css", "lifecycle": "implemented", "provenance": "authored"},
     {"path": "public/js/app.js", "lifecycle": "implemented", "provenance": "authored"},
     {"path": "public/js/network.js", "lifecycle": "implemented", "provenance": "authored"},
     {"path": "public/js/views.js", "lifecycle": "implemented", "provenance": "authored"}

@@ -1,0 +1,23 @@
+.bomb::after {
+  content: "";
+  position: absolute;
+  top: 1%;
+  right: 1%;
+  width: 46%;
+  height: 46%;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 88% 12%, #fff8b8 0 8%, #ffcf55 9% 17%, #f07a32 18% 27%, transparent 28%),
+    linear-gradient(135deg, transparent 0 43%, #83512f 44% 54%, transparent 55% 100%);
+  filter: drop-shadow(0 0 2px rgba(255, 200, 72, 0.72));
+  transform-origin: 78% 20%;
+  animation: bomb-fuse-spark 180ms steps(2, end) infinite;
+}
+
+@keyframes bomb-fuse-spark {
+  50% {
+    opacity: 0.68;
+    transform: rotate(5deg) scale(0.94);
+  }
+}
