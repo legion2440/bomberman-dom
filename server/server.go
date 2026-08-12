@@ -232,7 +232,7 @@ func (h *hub) handleJoin(c *client, raw json.RawMessage) {
 		return
 	}
 	if r.clock.phase == phaseFinished {
-		h.sendErrorLocked(c, "match finished; reload to start a new room")
+		h.sendErrorLocked(c, "match finished; next lobby opens shortly")
 		return
 	}
 	if len(r.clients) == 0 {
