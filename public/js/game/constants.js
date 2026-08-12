@@ -18,20 +18,32 @@ export const SPAWNS = [
 ];
 
 export const SPAWN_SAFE = [
-  [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 1, y: 2 }],
+  [
+    { x: 1, y: 1 },
+    { x: 2, y: 1 },
+    { x: 3, y: 1 },
+    { x: 4, y: 1 },
+    { x: 1, y: 2 },
+  ],
   [
     { x: GRID_WIDTH - 2, y: GRID_HEIGHT - 2 },
     { x: GRID_WIDTH - 3, y: GRID_HEIGHT - 2 },
+    { x: GRID_WIDTH - 4, y: GRID_HEIGHT - 2 },
+    { x: GRID_WIDTH - 5, y: GRID_HEIGHT - 2 },
     { x: GRID_WIDTH - 2, y: GRID_HEIGHT - 3 },
   ],
   [
     { x: GRID_WIDTH - 2, y: 1 },
     { x: GRID_WIDTH - 3, y: 1 },
+    { x: GRID_WIDTH - 4, y: 1 },
+    { x: GRID_WIDTH - 5, y: 1 },
     { x: GRID_WIDTH - 2, y: 2 },
   ],
   [
     { x: 1, y: GRID_HEIGHT - 2 },
     { x: 2, y: GRID_HEIGHT - 2 },
+    { x: 3, y: GRID_HEIGHT - 2 },
+    { x: 4, y: GRID_HEIGHT - 2 },
     { x: 1, y: GRID_HEIGHT - 3 },
   ],
 ];

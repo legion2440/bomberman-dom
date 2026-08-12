@@ -99,4 +99,51 @@ function flameAt(engine, player, ownerId = "p2") {
   assert.equal(ghost.dead, true);
 }
 
+function escapeDistanceAfterOwnBomb(engine, player) {
+  const start = { x: Math.round(player.x), y: Math.round(player.y) };
+  const blast = new Set([`${start.x},${start.y}`]);
+  const directions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+  for (const [dx, dy] of directions) {
+    for (let step = 1; step <= player.flameRange; step += 1) {
+      const x = start.x + dx * step;
+      const y = start.y + dy * step;
+      const tile = engine.state.map[y]?.[x];
+      if (tile === undefined || tile === "wall") break;
+      blast.add(`${x},${y}`);
+      if (tile === "block") break;
+    }
+  }
+
+  const queue = [{ ...start, distance: 0 }];
+  const seen = new Set([`${start.x},${start.y}`]);
+  while (queue.length) {
+    const current = queue.shift();
+    if (!blast.has(`${current.x},${current.y}`)) return current.distance;
+
+    for (const [dx, dy] of directions) {
+      const x = current.x + dx;
+      const y = current.y + dy;
+      const key = `${x},${y}`;
+      if (seen.has(key)) continue;
+      const tile = engine.state.map[y]?.[x];
+      if (tile !== "floor") continue;
+      seen.add(key);
+      queue.push({ x, y, distance: current.distance + 1 });
+    }
+  }
+  return Infinity;
+}
+
+{
+  for (let sample = 0; sample < 2000; sample += 1) {
+    const engine = new GameEngine(players(4), { mode: "classic" });
+    for (const player of engine.state.players) {
+      const distance = escapeDistanceAfterOwnBomb(engine, player);
+      assert.ok(Number.isFinite(distance), `spawn ${player.slot} has no escape route on sample ${sample}`);
+      assert.ok(distance <= 3, `spawn ${player.slot} escape route is too long: ${distance}`);
+    }
+  }
+}
+
 console.log("[OK] game engine tests");
