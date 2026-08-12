@@ -1,31 +1,23 @@
-import { GRID_WIDTH } from "./constants.js";
-
 export function createGameRenderer() {
   const entityNodes = new Map();
   const visualPlayers = new Map();
-  let boardNode = null;
-  let tilePixels = 0;
-
-  function setBoard(node) {
-    boardNode = node;
-    resize();
-  }
 
   function setEntityRef(id, node) {
-    if (node) entityNodes.set(id, node);
-  }
-
-  function resize() {
-    if (!boardNode) return;
-    tilePixels = boardNode.clientWidth / GRID_WIDTH;
+    if (!node) return;
+    if (entityNodes.get(id) !== node) node.style.visibility = "hidden";
+    entityNodes.set(id, node);
   }
 
   function renderFrame(gameState, smoothRemote = false, dt = 0) {
-    if (!gameState || !tilePixels) return;
+    if (!gameState) return;
+
+    const liveIds = new Set();
 
     for (const player of gameState.players || []) {
+      if (player.dead) continue;
+      liveIds.add(player.id);
       const node = entityNodes.get(player.id);
-      if (!node || player.dead) continue;
+      if (!node) continue;
 
       let x = player.x;
       let y = player.y;
@@ -47,24 +39,32 @@ export function createGameRenderer() {
     }
 
     for (const bomb of gameState.bombs || []) {
+      liveIds.add(bomb.id);
       const node = entityNodes.get(bomb.id);
       if (node) place(node, bomb.x, bomb.y);
     }
 
     for (const flame of gameState.flames || []) {
+      liveIds.add(flame.id);
       const node = entityNodes.get(flame.id);
       if (node) place(node, flame.x, flame.y);
+    }
+
+    for (const id of entityNodes.keys()) {
+      if (!liveIds.has(id)) entityNodes.delete(id);
+    }
+    for (const id of visualPlayers.keys()) {
+      if (!liveIds.has(id)) visualPlayers.delete(id);
     }
   }
 
   function place(node, x, y) {
-    node.style.transform = `translate3d(${(x * tilePixels).toFixed(2)}px, ${(y * tilePixels).toFixed(2)}px, 0)`;
+    node.style.transform = `translate3d(${(x * 100).toFixed(2)}%, ${(y * 100).toFixed(2)}%, 0)`;
+    if (node.style.visibility) node.style.visibility = "";
   }
 
   return {
-    setBoard,
     setEntityRef,
-    resize,
     renderFrame,
   };
 }

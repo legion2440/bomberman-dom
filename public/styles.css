@@ -498,11 +498,11 @@ select:focus {
   left: 0;
   width: calc(100% / 15);
   aspect-ratio: 1;
-  will-change: transform;
 }
 
 .player {
   display: grid;
+  will-change: transform;
   place-items: center;
   z-index: 3;
 }

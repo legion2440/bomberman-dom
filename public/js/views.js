@@ -145,7 +145,7 @@ function viewGame(state, actions, renderer) {
             { class: "result-overlay card" },
             h("h1", {}, state.result?.winnerNickname ? `${state.result.winnerNickname} wins` : "Match ended"),
             h("p", {}, state.result?.reason || "The match is over."),
-            h("button", { type: "button", on: { click: actions.reload } }, "New match"),
+            h("p", {}, "The next lobby opens automatically in a few seconds."),
           )
         : null,
       h("p", { class: "controls-hint" }, "Move: WASD / arrows · Bomb: Space / Enter"),
@@ -160,8 +160,6 @@ function viewBoard(game, renderer) {
       h("div", {
         class: `tile ${tile}`,
         key: `tile-${x}-${y}`,
-        "data-x": x,
-        "data-y": y,
       }),
     ),
   );
@@ -201,7 +199,6 @@ function viewBoard(game, renderer) {
     "div",
     {
       class: "board",
-      ref: (node) => renderer.setBoard(node),
       "aria-label": "Bomberman arena",
     },
     h("div", { class: "tiles" }, tiles),
