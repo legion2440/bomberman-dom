@@ -46,6 +46,14 @@ function viewNickname(state, actions) {
         autofocus: true,
         on: { input: actions.nicknameInput },
       }),
+      h(
+        "select",
+        { value: state.modeDraft, on: { change: actions.modeInput }, "aria-label": "Game mode" },
+        h("option", { value: "classic" }, "Classic multiplayer"),
+        h("option", { value: "coop" }, "Solo / Co-op vs AI"),
+        h("option", { value: "teams" }, "Team 2v2"),
+        h("option", { value: "ghosts" }, "Ghost mode"),
+      ),
       h("button", { type: "submit", disabled: state.connectionStatus === "connecting" }, "Join game"),
     ),
     state.error ? h("p", { class: "error" }, state.error) : null,
@@ -61,7 +69,7 @@ function viewLobby(state, actions) {
     h(
       "div",
       { class: "card lobby-main" },
-      h("div", { class: "eyebrow" }, "Waiting room"),
+      h("div", { class: "eyebrow" }, `Waiting room · ${modeLabel(state.mode)}`),
       h("h1", {}, `${state.lobbyPlayers.length} / 4 players`),
       h("p", { class: "lobby-status" }, phaseText),
       h(
@@ -105,7 +113,7 @@ function viewLobby(state, actions) {
 function viewGame(state, actions, renderer) {
   const game = state.gameState;
   const self = game?.players?.find((player) => player.id === state.selfId);
-  const alive = game?.players?.filter((player) => !player.dead).length ?? state.lobbyPlayers.length;
+  const alive = game?.players?.filter((player) => !player.dead && !player.ghost).length ?? state.lobbyPlayers.length;
 
   return h(
     "section",
@@ -117,13 +125,14 @@ function viewGame(state, actions, renderer) {
         "div",
         { class: "game-hud card" },
         h("span", {}, `You: ${self?.nickname || state.nickname}`),
+        h("span", {}, modeLabel(state.mode)),
         h("span", {}, `Lives: ${self?.lives ?? 3}`),
         h("span", {}, `Alive: ${alive}`),
         h(
           "span",
           {},
           self
-            ? `Bombs ${self.bombCapacity} · Flame ${self.flameRange} · Speed ${self.speed.toFixed(1)}`
+            ? `${self.ghost ? "Ghost · " : ""}Bombs ${self.bombCapacity} · Flame ${self.flameRange} · Speed ${self.speed.toFixed(1)}${self.team >= 0 ? ` · Team ${self.team === 0 ? "A" : "B"}` : ""}`
             : "Synchronizing…",
         ),
       ),
@@ -171,7 +180,7 @@ function viewBoard(game, renderer) {
         h(
           "div",
           {
-            class: `entity player player-${player.slot}`,
+            class: `entity player player-${player.slot} ${player.bot ? "bot" : ""} ${player.ghost ? "ghost" : ""} ${player.team >= 0 ? `team-${player.team}` : ""}`,
             key: player.id,
             ref: (node) => renderer.setEntityRef(player.id, node),
           },
@@ -235,6 +244,14 @@ function viewChat(state, actions) {
 }
 
 function lobbyPhaseText(state) {
+  if (state.mode === "coop") {
+    if (state.lobbyPhase === "countdown") return `Co-op battle starts in ${state.countdownRemaining}s.`;
+    return "Solo/Co-op mode starts with one or more human players against the Bomber AI.";
+  }
+  if (state.mode === "teams") {
+    if (state.lobbyPlayers.length < 4) return `Team 2v2 needs four players (${state.lobbyPlayers.length}/4).`;
+    if (state.lobbyPhase === "countdown") return `Team match starts in ${state.countdownRemaining}s.`;
+  }
   if (state.lobbyPlayers.length < 2) return "Waiting for at least one more player.";
   if (state.lobbyPhase === "collecting") {
     return `The match can take up to 4 players. Countdown starts in ${state.waitRemaining}s unless the room fills first.`;
@@ -243,4 +260,11 @@ function lobbyPhaseText(state) {
     return `Players ready. Starting in ${state.countdownRemaining}s.`;
   }
   return "Waiting for the server.";
+}
+
+function modeLabel(mode) {
+  if (mode === "coop") return "Solo / Co-op vs AI";
+  if (mode === "teams") return "Team 2v2";
+  if (mode === "ghosts") return "Ghost mode";
+  return "Classic multiplayer";
 }

@@ -34,7 +34,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -60,7 +61,8 @@ button:disabled {
   opacity: 0.65;
 }
 
-input {
+input,
+select {
   width: 100%;
   min-height: 44px;
   border: 2px solid var(--line);
@@ -71,7 +73,8 @@ input {
   outline: none;
 }
 
-input:focus {
+input:focus,
+select:focus {
   box-shadow: 0 0 0 3px rgba(53, 132, 154, 0.22);
 }
 
@@ -170,7 +173,7 @@ input:focus {
 
 .nickname-form {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(140px, 1fr) minmax(170px, 1fr) auto;
   gap: 8px;
   margin-top: 20px;
 }
@@ -431,14 +434,20 @@ input:focus {
 
 .tile.power-bomb,
 .tile.power-flame,
-.tile.power-speed {
+.tile.power-speed,
+.tile.power-bomb-pass,
+.tile.power-block-pass,
+.tile.power-life {
   position: relative;
   background: var(--paper-strong);
 }
 
 .tile.power-bomb::after,
 .tile.power-flame::after,
-.tile.power-speed::after {
+.tile.power-speed::after,
+.tile.power-bomb-pass::after,
+.tile.power-block-pass::after,
+.tile.power-life::after {
   position: absolute;
   inset: 17%;
   display: grid;
@@ -464,6 +473,25 @@ input:focus {
   color: var(--water);
 }
 
+.tile.power-bomb-pass::after {
+  content: "BP";
+  background: #b8d9ed;
+  color: #244e67;
+}
+
+.tile.power-block-pass::after {
+  content: "WP";
+  background: #d6b891;
+  color: #6e3b25;
+}
+
+.tile.power-life::after {
+  content: "1UP";
+  background: #a5db9e;
+  color: #265c30;
+  font-size: clamp(8px, 1.25vw, 14px);
+}
+
 .entity {
   position: absolute;
   top: 0;
@@ -485,6 +513,29 @@ input:focus {
   border: 3px solid var(--line);
   border-radius: 12px 12px 9px 9px;
   box-shadow: inset -4px -5px 0 rgba(0, 0, 0, 0.14);
+}
+
+.player.bot .player-face {
+  border-radius: 50%;
+  background: #9b69c3;
+  box-shadow: inset -5px -6px 0 rgba(0, 0, 0, 0.2);
+}
+
+.player.ghost {
+  opacity: 0.62;
+  filter: saturate(0.2) brightness(1.45);
+}
+
+.player.ghost .player-face {
+  border-style: dashed;
+}
+
+.player.team-0 .player-name {
+  color: #bde6ff;
+}
+
+.player.team-1 .player-name {
+  color: #ffd9b5;
 }
 
 .player-name {

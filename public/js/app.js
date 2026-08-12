@@ -9,6 +9,8 @@ const store = createStore({
   screen: "nickname",
   nicknameDraft: "",
   nickname: "",
+  modeDraft: "classic",
+  mode: "classic",
   selfId: "",
   selfSlot: -1,
   lobbyPlayers: [],
@@ -56,6 +58,7 @@ const network = createNetwork({
     const selfId = store.getState().selfId;
     isHost = Boolean(data.players?.find((player) => player.id === selfId)?.host);
     store.setState({
+      mode: data.mode || "classic",
       lobbyPlayers: data.players || [],
       lobbyPhase: data.phase || "waiting",
       waitRemaining: Number(data.waitRemaining) || 0,
@@ -76,14 +79,16 @@ const network = createNetwork({
 
   onGameStart(data) {
     const players = data.players || [];
+    const mode = data.mode || store.getState().mode || "classic";
     isHost = Boolean(players.find((player) => player.id === store.getState().selfId)?.host);
     pressed.clear();
 
     if (isHost) {
-      engine = new GameEngine(players);
+      engine = new GameEngine(players, { mode });
       const gameState = engine.state;
       store.setState((state) => ({
         screen: "game",
+        mode,
         lobbyPlayers: players,
         gameState,
         gameRevision: state.gameRevision + 1,
@@ -94,6 +99,7 @@ const network = createNetwork({
       engine = null;
       store.setState({
         screen: "game",
+        mode,
         lobbyPlayers: players,
         gameState: null,
         result: null,
@@ -127,6 +133,10 @@ const actions = {
     store.setState({ nicknameDraft: event.target.value, error: "" });
   },
 
+  modeInput(event) {
+    store.setState({ modeDraft: event.target.value, error: "" });
+  },
+
   join(event) {
     event.preventDefault();
     const nickname = store.getState().nicknameDraft.trim();
@@ -136,7 +146,7 @@ const actions = {
     }
 
     store.setState({ connectionStatus: "connecting", error: "" });
-    network.connect(nickname);
+    network.connect(nickname, store.getState().modeDraft);
   },
 
   chatInput(event) {

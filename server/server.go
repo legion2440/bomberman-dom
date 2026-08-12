@@ -15,9 +15,14 @@ import (
 )
 
 const (
-	maxPlayers        = 4
+	maxPlayers       = 4
 	maxNicknameRunes = 18
-	maxChatRunes      = 240
+	maxChatRunes     = 240
+
+	modeClassic = "classic"
+	modeCoop    = "coop"
+	modeTeams   = "teams"
+	modeGhosts  = "ghosts"
 )
 
 type wireMessage struct {
@@ -33,6 +38,7 @@ type playerInfo struct {
 }
 
 type lobbyPayload struct {
+	Mode               string       `json:"mode"`
 	Players            []playerInfo `json:"players"`
 	Phase              lobbyPhase   `json:"phase"`
 	WaitRemaining      int          `json:"waitRemaining"`
@@ -65,6 +71,7 @@ type room struct {
 	mu      sync.Mutex
 	clients map[string]*client
 	clock   lobbyClock
+	mode    string
 }
 
 type hub struct {
@@ -77,6 +84,7 @@ func newHub() *hub {
 		room: &room{
 			clients: make(map[string]*client),
 			clock:   newLobbyClock(),
+			mode:    modeClassic,
 		},
 	}
 }
@@ -178,6 +186,7 @@ func (c *client) writeLoop() {
 func (h *hub) handleJoin(c *client, raw json.RawMessage) {
 	var data struct {
 		Nickname string `json:"nickname"`
+		Mode     string `json:"mode"`
 	}
 	if err := json.Unmarshal(raw, &data); err != nil {
 		h.sendError(c, "invalid join payload")
@@ -205,6 +214,9 @@ func (h *hub) handleJoin(c *client, raw json.RawMessage) {
 		h.sendErrorLocked(c, "match finished; reload to start a new room")
 		return
 	}
+	if len(r.clients) == 0 {
+		r.mode = sanitizeMode(data.Mode)
+	}
 	if len(r.clients) >= maxPlayers {
 		h.sendErrorLocked(c, "room is full")
 		return
@@ -221,7 +233,7 @@ func (h *hub) handleJoin(c *client, raw json.RawMessage) {
 	c.joined = true
 	r.clients[c.id] = c
 
-	r.clock.onPlayerCount(time.Now(), len(r.clients))
+	r.clock.onPlayerCount(time.Now(), len(r.clients), r.mode)
 	h.sendLocked(c, "joined", joinedPayload{ID: c.id, Slot: c.slot})
 	h.broadcastLobbyLocked(r, time.Now())
 }
@@ -320,6 +332,7 @@ func (h *hub) removeClient(c *client) {
 
 		if len(r.clients) == 0 {
 			r.clock = newLobbyClock()
+			r.mode = modeClassic
 		} else if r.clock.phase == phasePlaying && wasHost {
 			r.clock.phase = phaseFinished
 			h.broadcastLocked(r, "game_over", map[string]any{
@@ -328,7 +341,7 @@ func (h *hub) removeClient(c *client) {
 				"reason":         "host disconnected",
 			}, "")
 		} else {
-			r.clock.onPlayerCount(time.Now(), len(r.clients))
+			r.clock.onPlayerCount(time.Now(), len(r.clients), r.mode)
 		}
 		if len(r.clients) > 0 {
 			h.broadcastLobbyLocked(r, time.Now())
@@ -347,9 +360,9 @@ func (h *hub) lobbyLoop() {
 	for now := range ticker.C {
 		r := h.room
 		r.mu.Lock()
-		if r.clock.advance(now, len(r.clients)) {
+		if r.clock.advance(now, len(r.clients), r.mode) {
 			players := playersLocked(r)
-			h.broadcastLocked(r, "game_start", map[string]any{"players": players}, "")
+			h.broadcastLocked(r, "game_start", map[string]any{"players": players, "mode": r.mode}, "")
 		}
 		if len(r.clients) > 0 && (r.clock.phase == phaseCollecting || r.clock.phase == phaseCountdown) {
 			h.broadcastLobbyLocked(r, now)
@@ -361,6 +374,7 @@ func (h *hub) lobbyLoop() {
 func (h *hub) broadcastLobbyLocked(r *room, now time.Time) {
 	waitRemaining, countdownRemaining := r.clock.remaining(now)
 	h.broadcastLocked(r, "lobby", lobbyPayload{
+		Mode:               r.mode,
 		Players:            playersLocked(r),
 		Phase:              r.clock.phase,
 		WaitRemaining:      waitRemaining,
@@ -497,6 +511,19 @@ func marshalWire(kind string, data any) ([]byte, error) {
 		return nil, err
 	}
 	return json.Marshal(wireMessage{Type: kind, Data: raw})
+}
+
+func sanitizeMode(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case modeCoop:
+		return modeCoop
+	case modeTeams:
+		return modeTeams
+	case modeGhosts:
+		return modeGhosts
+	default:
+		return modeClassic
+	}
 }
 
 func cleanNickname(value string) string {

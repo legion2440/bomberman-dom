@@ -1,7 +1,7 @@
 export function createNetwork(handlers = {}) {
   let socket = null;
 
-  function connect(nickname) {
+  function connect(nickname, mode = "classic") {
     disconnect();
 
     const protocol = location.protocol === "https:" ? "wss" : "ws";
@@ -9,7 +9,7 @@ export function createNetwork(handlers = {}) {
 
     socket.addEventListener("open", () => {
       handlers.onStatus?.("connected");
-      send("join", { nickname });
+      send("join", { nickname, mode });
     });
 
     socket.addEventListener("close", () => {

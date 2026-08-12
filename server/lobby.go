@@ -27,31 +27,38 @@ func newLobbyClock() lobbyClock {
 	return lobbyClock{phase: phaseWaiting}
 }
 
-func (l *lobbyClock) onPlayerCount(now time.Time, count int) {
+func (l *lobbyClock) onPlayerCount(now time.Time, count int, mode string) {
 	if l.phase == phasePlaying || l.phase == phaseFinished {
 		return
 	}
 
-	if count < 2 {
+	minimum := minimumPlayers(mode)
+	if count < minimum {
 		l.phase = phaseWaiting
 		l.waitDeadline = time.Time{}
 		l.countdownDeadline = time.Time{}
 		return
 	}
 
-	if l.phase == phaseWaiting {
-		l.phase = phaseCollecting
-		l.waitDeadline = now.Add(waitWindow)
-	}
-
-	if count >= 4 && l.phase == phaseCollecting {
-		l.beginCountdown(now)
+	switch mode {
+	case modeCoop, modeTeams:
+		if l.phase == phaseWaiting {
+			l.beginCountdown(now)
+		}
+	default:
+		if l.phase == phaseWaiting {
+			l.phase = phaseCollecting
+			l.waitDeadline = now.Add(waitWindow)
+		}
+		if count >= 4 && l.phase == phaseCollecting {
+			l.beginCountdown(now)
+		}
 	}
 }
 
-func (l *lobbyClock) advance(now time.Time, count int) (started bool) {
-	if count < 2 {
-		l.onPlayerCount(now, count)
+func (l *lobbyClock) advance(now time.Time, count int, mode string) (started bool) {
+	if count < minimumPlayers(mode) {
+		l.onPlayerCount(now, count, mode)
 		return false
 	}
 
@@ -83,6 +90,17 @@ func (l lobbyClock) remaining(now time.Time) (waitSeconds, countdownSeconds int)
 		countdownSeconds = ceilSeconds(l.countdownDeadline.Sub(now))
 	}
 	return
+}
+
+func minimumPlayers(mode string) int {
+	switch mode {
+	case modeCoop:
+		return 1
+	case modeTeams:
+		return 4
+	default:
+		return 2
+	}
 }
 
 func ceilSeconds(d time.Duration) int {
