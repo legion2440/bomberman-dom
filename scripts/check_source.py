@@ -80,6 +80,8 @@ def main() -> int:
     require("container-type: inline-size" in css and "cqi" in css, "power-up labels are not sized relative to their tiles")
     require("state.fps" not in views and "fpsclock" not in app.lower(), "display-refresh FPS must not be exposed as game FPS")
     require("actions.leave" in views and "network.disconnect()" in app and "renderer.reset()" in app, "leave-game session cleanup is missing")
+    board_rules = re.findall(r"\.board\s*\{([^}]*)\}", css, re.S)
+    require(board_rules and all("vh" not in rule for rule in board_rules), "board sizing must not counter-scale against browser zoom via viewport height")
     require("require (" not in go_mod and "require\n" not in go_mod, "go.mod must not add third-party dependencies")
 
     # Application code may use framework refs for transform/opacity animation, but should not

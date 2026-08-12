@@ -398,7 +398,7 @@ select:focus {
 
 .board {
   position: relative;
-  width: min(68vw, 690px, calc((100vh - 175px) * 15 / 13));
+  width: min(68vw, 690px);
   aspect-ratio: 15 / 13;
   margin: 0 auto;
   overflow: hidden;
@@ -655,7 +655,7 @@ select:focus {
   }
 
   .board {
-    width: min(94vw, 690px, calc((100vh - 180px) * 15 / 13));
+    width: min(94vw, 690px);
   }
 }
 
@@ -688,6 +688,6 @@ select:focus {
   }
 
   .board {
-    width: min(96vw, calc((100vh - 225px) * 15 / 13));
+    width: min(96vw, 690px);
   }
 }
