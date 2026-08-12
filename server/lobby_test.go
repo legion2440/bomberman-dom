@@ -100,3 +100,35 @@ func TestTeamsWaitForFourPlayers(t *testing.T) {
 		t.Fatalf("teams phase with 4 players = %q, want countdown", lobby.phase)
 	}
 }
+
+func TestFinishedRoomResetsAfterGrace(t *testing.T) {
+	now := time.Unix(1_700_000_000, 0)
+	r := &room{
+		clients: map[string]*client{
+			"a": {id: "a", slot: 0},
+			"b": {id: "b", slot: 1},
+			"c": {id: "c", slot: 2},
+			"d": {id: "d", slot: 3},
+		},
+		clock: newLobbyClock(),
+		mode:  modeClassic,
+	}
+	r.markFinished(now)
+
+	if r.resetFinishedIfDue(now.Add(finishedGrace - time.Millisecond)) {
+		t.Fatal("finished room reset before grace period elapsed")
+	}
+	if r.clock.phase != phaseFinished {
+		t.Fatalf("phase before grace = %q, want finished", r.clock.phase)
+	}
+
+	if !r.resetFinishedIfDue(now.Add(finishedGrace)) {
+		t.Fatal("finished room did not reset after grace period")
+	}
+	if r.clock.phase != phaseCountdown {
+		t.Fatalf("four connected players after reset = %q, want countdown", r.clock.phase)
+	}
+	if !r.finishedAt.IsZero() {
+		t.Fatal("finishedAt was not cleared after reset")
+	}
+}

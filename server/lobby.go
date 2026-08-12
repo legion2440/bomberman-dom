@@ -5,6 +5,7 @@ import "time"
 const (
 	waitWindow      = 20 * time.Second
 	countdownWindow = 10 * time.Second
+	finishedGrace   = 6 * time.Second
 )
 
 type lobbyPhase string

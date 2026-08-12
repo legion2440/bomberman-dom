@@ -42,6 +42,9 @@ export function createNetwork(handlers = {}) {
         case "input":
           handlers.onInput?.(data);
           break;
+        case "tick":
+          handlers.onTick?.(data);
+          break;
         case "state":
           handlers.onState?.(data);
           break;

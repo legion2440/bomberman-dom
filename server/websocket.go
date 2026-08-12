@@ -9,6 +9,12 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
+)
+
+const (
+	wsReadTimeout  = 60 * time.Second
+	wsWriteTimeout = 5 * time.Second
 )
 
 type wsConn struct {
@@ -24,6 +30,9 @@ func newWSConn(conn net.Conn, reader *bufio.Reader, writer *bufio.Writer) *wsCon
 
 func (w *wsConn) ReadMessage() ([]byte, error) {
 	for {
+		if err := w.conn.SetReadDeadline(time.Now().Add(wsReadTimeout)); err != nil {
+			return nil, err
+		}
 		b1, err := w.reader.ReadByte()
 		if err != nil {
 			return nil, err
@@ -102,9 +111,17 @@ func (w *wsConn) WriteMessage(payload []byte) error {
 	return w.writeFrame(0x1, payload)
 }
 
+func (w *wsConn) WritePing() error {
+	return w.writeFrame(0x9, nil)
+}
+
 func (w *wsConn) writeFrame(opcode byte, payload []byte) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+
+	if err := w.conn.SetWriteDeadline(time.Now().Add(wsWriteTimeout)); err != nil {
+		return err
+	}
 
 	header := []byte{0x80 | opcode}
 	size := len(payload)

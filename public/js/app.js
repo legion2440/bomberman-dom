@@ -1,7 +1,5 @@
 import { createStore, listen, mount } from "../framework/pushok/index.js";
 import { createNetwork } from "./network.js";
-import { GameEngine } from "./game/engine.js";
-import { SNAPSHOT_INTERVAL } from "./game/constants.js";
 import { createGameRenderer } from "./game/renderer.js";
 import { viewApp } from "./views.js";
 
@@ -30,13 +28,14 @@ const store = createStore({
 const renderer = createGameRenderer();
 const pressed = new Set();
 
-let engine = null;
 let isHost = false;
+let simulationWorker = null;
+let hostRenderState = null;
 let lastFrame = performance.now();
-let snapshotClock = 0;
 let inputClock = 0;
 let fpsClock = 0;
 let fpsFrames = 0;
+let bombLatched = false;
 
 const network = createNetwork({
   onStatus(status) {
@@ -55,14 +54,24 @@ const network = createNetwork({
   },
 
   onLobby(data) {
-    const selfId = store.getState().selfId;
+    const state = store.getState();
+    const phase = data.phase || "waiting";
+    const selfId = state.selfId;
     isHost = Boolean(data.players?.find((player) => player.id === selfId)?.host);
+
+    const returningToLobby = state.screen === "finished" && phase !== "finished" && phase !== "playing";
+    if (returningToLobby) stopHostSimulation();
+
     store.setState({
+      screen: returningToLobby ? "lobby" : state.screen,
       mode: data.mode || "classic",
       lobbyPlayers: data.players || [],
-      lobbyPhase: data.phase || "waiting",
+      lobbyPhase: phase,
       waitRemaining: Number(data.waitRemaining) || 0,
       countdownRemaining: Number(data.countdownRemaining) || 0,
+      result: returningToLobby ? null : state.result,
+      gameState: returningToLobby ? null : state.gameState,
+      error: returningToLobby ? "" : state.error,
     });
   },
 
@@ -73,8 +82,13 @@ const network = createNetwork({
   },
 
   onInput(data) {
-    if (!isHost || !engine) return;
-    engine.setInput(data.clientId, data.input);
+    if (!isHost || !simulationWorker) return;
+    simulationWorker.postMessage({ type: "input", playerId: data.clientId, input: data.input });
+  },
+
+  onTick(data) {
+    if (!isHost || !simulationWorker) return;
+    simulationWorker.postMessage({ type: "tick", at: Number(data.at) || 0 });
   },
 
   onGameStart(data) {
@@ -82,28 +96,23 @@ const network = createNetwork({
     const mode = data.mode || store.getState().mode || "classic";
     isHost = Boolean(players.find((player) => player.id === store.getState().selfId)?.host);
     pressed.clear();
+    bombLatched = false;
+    hostRenderState = null;
+
+    store.setState({
+      screen: "game",
+      mode,
+      lobbyPlayers: players,
+      gameState: null,
+      result: null,
+      error: "",
+    });
 
     if (isHost) {
-      engine = new GameEngine(players, { mode });
-      const gameState = engine.state;
-      store.setState((state) => ({
-        screen: "game",
-        mode,
-        lobbyPlayers: players,
-        gameState,
-        gameRevision: state.gameRevision + 1,
-        result: null,
-      }));
-      network.send("state", engine.snapshot());
+      startHostSimulation(players, mode);
+      syncHostInput();
     } else {
-      engine = null;
-      store.setState({
-        screen: "game",
-        mode,
-        lobbyPlayers: players,
-        gameState: null,
-        result: null,
-      });
+      stopHostSimulation();
     }
   },
 
@@ -117,6 +126,8 @@ const network = createNetwork({
 
   onGameOver(data) {
     pressed.clear();
+    bombLatched = false;
+    stopHostSimulation();
     store.setState({
       screen: "finished",
       result: data,
@@ -161,10 +172,6 @@ const actions = {
       store.setState({ chatDraft: "" });
     }
   },
-
-  reload() {
-    location.reload();
-  },
 };
 
 mount({
@@ -177,18 +184,64 @@ listen(document, "keydown", (event) => {
   if (isTypingTarget(event.target)) return;
   if (!isGameplayKey(event.code)) return;
 
+  const wasPressed = pressed.has(event.code);
   pressed.add(event.code);
+  if (!wasPressed && isBombKey(event.code)) bombLatched = true;
+  if (isHost) syncHostInput();
   event.preventDefault();
 });
 
 listen(document, "keyup", (event) => {
   if (!isGameplayKey(event.code)) return;
   pressed.delete(event.code);
+  if (isHost) syncHostInput();
   event.preventDefault();
 });
 
-listen(window, "blur", () => pressed.clear());
-listen(window, "resize", () => renderer.resize());
+listen(window, "blur", () => {
+  pressed.clear();
+  bombLatched = false;
+  if (isHost) syncHostInput();
+});
+
+function startHostSimulation(players, mode) {
+  stopHostSimulation();
+  simulationWorker = new Worker(new URL("./game/simulation-worker.js", import.meta.url), { type: "module" });
+  simulationWorker.addEventListener("message", (event) => {
+    const message = event.data || {};
+    if (message.type === "frame") {
+      hostRenderState = message.state;
+      if (message.snapshot) {
+        store.setState((state) => ({
+          gameState: message.state,
+          gameRevision: state.gameRevision + 1,
+        }));
+        network.send("state", message.state);
+      }
+      return;
+    }
+    if (message.type === "game_over") {
+      network.send("game_over", message.data || {});
+    }
+  });
+  simulationWorker.postMessage({ type: "start", players, mode });
+}
+
+function stopHostSimulation() {
+  if (simulationWorker) {
+    simulationWorker.postMessage({ type: "stop" });
+    simulationWorker.terminate();
+    simulationWorker = null;
+  }
+  hostRenderState = null;
+}
+
+function syncHostInput() {
+  const state = store.getState();
+  if (!isHost || !simulationWorker || state.screen !== "game") return;
+  simulationWorker.postMessage({ type: "input", playerId: state.selfId, input: currentInput() });
+  bombLatched = false;
+}
 
 function frame(now) {
   const dt = Math.min(0.05, Math.max(0, (now - lastFrame) / 1000));
@@ -196,31 +249,15 @@ function frame(now) {
 
   const state = store.getState();
   if (state.screen === "game") {
-    const input = currentInput();
-
-    if (isHost && engine) {
-      engine.setInput(state.selfId, input);
-      engine.update(dt);
-      renderer.renderFrame(engine.state, false, dt);
-
-      snapshotClock += dt;
-      if (snapshotClock >= SNAPSHOT_INTERVAL) {
-        snapshotClock %= SNAPSHOT_INTERVAL;
-        store.setState((current) => ({
-          gameState: engine.state,
-          gameRevision: current.gameRevision + 1,
-        }));
-        network.send("state", engine.snapshot());
-      }
-
-      const gameOver = engine.consumeGameOver();
-      if (gameOver) network.send("game_over", gameOver);
+    if (isHost) {
+      renderer.renderFrame(hostRenderState || state.gameState, false, dt);
     } else {
       renderer.renderFrame(state.gameState, true, dt);
       inputClock += dt;
       if (inputClock >= 1 / 30) {
         inputClock %= 1 / 30;
-        network.send("input", input);
+        const input = currentInput();
+        if (network.send("input", input)) bombLatched = false;
       }
     }
   }
@@ -256,8 +293,12 @@ function currentInput() {
   return {
     x,
     y,
-    bomb: pressed.has("Space") || pressed.has("Enter"),
+    bomb: bombLatched || pressed.has("Space") || pressed.has("Enter"),
   };
+}
+
+function isBombKey(code) {
+  return code === "Space" || code === "Enter";
 }
 
 function isGameplayKey(code) {

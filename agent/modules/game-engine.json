@@ -14,6 +14,11 @@
       "provenance": "authored"
     },
     {
+      "path": "public/js/game/simulation-worker.js",
+      "lifecycle": "implemented",
+      "provenance": "authored"
+    },
+    {
       "path": "public/js/game/renderer.js",
       "lifecycle": "implemented",
       "provenance": "authored"

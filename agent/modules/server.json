@@ -3,13 +3,40 @@
   "module_id": "server",
   "purpose": "Dependency-free Go HTTP/WebSocket server with authoritative lobby timers, player slots and chat relay.",
   "paths": [
-    {"path": "server/server.go", "lifecycle": "implemented", "provenance": "authored"},
-    {"path": "server/websocket.go", "lifecycle": "implemented", "provenance": "authored"},
-    {"path": "server/lobby.go", "lifecycle": "implemented", "provenance": "authored"},
-    {"path": "server/lobby_test.go", "lifecycle": "implemented", "provenance": "authored"}
+    {
+      "path": "main.go",
+      "lifecycle": "implemented",
+      "provenance": "authored"
+    },
+    {
+      "path": "server/server.go",
+      "lifecycle": "implemented",
+      "provenance": "authored"
+    },
+    {
+      "path": "server/websocket.go",
+      "lifecycle": "implemented",
+      "provenance": "authored"
+    },
+    {
+      "path": "server/lobby.go",
+      "lifecycle": "implemented",
+      "provenance": "authored"
+    },
+    {
+      "path": "server/lobby_test.go",
+      "lifecycle": "implemented",
+      "provenance": "authored"
+    }
   ],
-  "contracts": ["docs/protocol.md"],
-  "validators": ["go test ./..."],
-  "tests": ["server/lobby_test.go"],
+  "contracts": [
+    "docs/protocol.md"
+  ],
+  "validators": [
+    "go test ./..."
+  ],
+  "tests": [
+    "server/lobby_test.go"
+  ],
   "runtime_evidence": []
 }

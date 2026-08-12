@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net"
 	"net/http"
@@ -68,10 +69,11 @@ type client struct {
 }
 
 type room struct {
-	mu      sync.Mutex
-	clients map[string]*client
-	clock   lobbyClock
-	mode    string
+	mu         sync.Mutex
+	clients    map[string]*client
+	clock      lobbyClock
+	mode       string
+	finishedAt time.Time
 }
 
 type hub struct {
@@ -89,13 +91,19 @@ func newHub() *hub {
 	}
 }
 
-func Run(port string) error {
+func Run(port string, assets fs.FS) error {
+	publicAssets, err := fs.Sub(assets, "public")
+	if err != nil {
+		return fmt.Errorf("open embedded public assets: %w", err)
+	}
+
 	h := newHub()
 	go h.lobbyLoop()
+	go h.gameTickLoop()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", h.websocketHandler)
-	mux.Handle("/", http.FileServer(http.Dir("public")))
+	mux.Handle("/", http.FileServer(http.FS(publicAssets)))
 
 	addr := ":" + port
 	log.Printf("Bomberman DOM is running on http://localhost%s", addr)
@@ -176,9 +184,22 @@ func (c *client) readLoop(h *hub) {
 }
 
 func (c *client) writeLoop() {
-	for payload := range c.send {
-		if err := c.conn.WriteMessage(payload); err != nil {
-			return
+	ping := time.NewTicker(20 * time.Second)
+	defer ping.Stop()
+
+	for {
+		select {
+		case payload, ok := <-c.send:
+			if !ok {
+				return
+			}
+			if err := c.conn.WriteMessage(payload); err != nil {
+				return
+			}
+		case <-ping.C:
+			if err := c.conn.WritePing(); err != nil {
+				return
+			}
 		}
 	}
 }
@@ -317,9 +338,10 @@ func (h *hub) handleGameOver(c *client, raw json.RawMessage) {
 	if err := json.Unmarshal(raw, &data); err != nil {
 		data = map[string]any{}
 	}
-	r.clock.phase = phaseFinished
+	now := time.Now()
+	r.markFinished(now)
 	h.broadcastLocked(r, "game_over", data, "")
-	h.broadcastLobbyLocked(r, time.Now())
+	h.broadcastLobbyLocked(r, now)
 }
 
 func (h *hub) removeClient(c *client) {
@@ -333,8 +355,10 @@ func (h *hub) removeClient(c *client) {
 		if len(r.clients) == 0 {
 			r.clock = newLobbyClock()
 			r.mode = modeClassic
+			r.finishedAt = time.Time{}
 		} else if r.clock.phase == phasePlaying && wasHost {
-			r.clock.phase = phaseFinished
+			now := time.Now()
+			r.markFinished(now)
 			h.broadcastLocked(r, "game_over", map[string]any{
 				"winnerId":       "",
 				"winnerNickname": "",
@@ -360,12 +384,45 @@ func (h *hub) lobbyLoop() {
 	for now := range ticker.C {
 		r := h.room
 		r.mu.Lock()
+		if r.resetFinishedIfDue(now) {
+			h.broadcastLobbyLocked(r, now)
+		}
 		if r.clock.advance(now, len(r.clients), r.mode) {
 			players := playersLocked(r)
 			h.broadcastLocked(r, "game_start", map[string]any{"players": players, "mode": r.mode}, "")
 		}
 		if len(r.clients) > 0 && (r.clock.phase == phaseCollecting || r.clock.phase == phaseCountdown) {
 			h.broadcastLobbyLocked(r, now)
+		}
+		r.mu.Unlock()
+	}
+}
+
+func (r *room) markFinished(now time.Time) {
+	r.clock.phase = phaseFinished
+	r.finishedAt = now
+}
+
+func (r *room) resetFinishedIfDue(now time.Time) bool {
+	if r.clock.phase != phaseFinished || r.finishedAt.IsZero() || now.Sub(r.finishedAt) < finishedGrace {
+		return false
+	}
+
+	r.finishedAt = time.Time{}
+	r.clock = newLobbyClock()
+	r.clock.onPlayerCount(now, len(r.clients), r.mode)
+	return true
+}
+
+func (h *hub) gameTickLoop() {
+	ticker := time.NewTicker(time.Second / 60)
+	defer ticker.Stop()
+
+	for now := range ticker.C {
+		r := h.room
+		r.mu.Lock()
+		if r.clock.phase == phasePlaying {
+			h.broadcastLocked(r, "tick", map[string]int64{"at": now.UnixMilli()}, hostIDLocked(r))
 		}
 		r.mu.Unlock()
 	}
