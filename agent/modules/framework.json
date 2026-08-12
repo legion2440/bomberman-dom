@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "module_id": "framework",
+  "purpose": "Repository-local copy of the PushOK mini-framework used by the browser application.",
+  "paths": [
+    {"path": "public/framework/pushok/index.js", "lifecycle": "implemented", "provenance": "authored"},
+    {"path": "public/framework/pushok/dom.js", "lifecycle": "implemented", "provenance": "authored"},
+    {"path": "public/framework/pushok/events.js", "lifecycle": "implemented", "provenance": "authored"},
+    {"path": "public/framework/pushok/mount.js", "lifecycle": "implemented", "provenance": "authored"},
+    {"path": "public/framework/pushok/router.js", "lifecycle": "implemented", "provenance": "authored"},
+    {"path": "public/framework/pushok/state.js", "lifecycle": "implemented", "provenance": "authored"},
+    {"path": "public/framework/pushok/vdom.js", "lifecycle": "implemented", "provenance": "authored"}
+  ],
+  "contracts": [],
+  "validators": ["scripts/check_source.py"],
+  "tests": [],
+  "runtime_evidence": []
+}

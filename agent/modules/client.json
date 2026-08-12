@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "module_id": "client",
+  "purpose": "PushOK application shell, nickname/lobby/game views, chat, keyboard input and WebSocket client.",
+  "paths": [
+    {"path": "public/index.html", "lifecycle": "implemented", "provenance": "authored"},
+    {"path": "public/styles.css", "lifecycle": "implemented", "provenance": "authored"},
+    {"path": "public/js/app.js", "lifecycle": "implemented", "provenance": "authored"},
+    {"path": "public/js/network.js", "lifecycle": "implemented", "provenance": "authored"},
+    {"path": "public/js/views.js", "lifecycle": "implemented", "provenance": "authored"}
+  ],
+  "contracts": ["docs/protocol.md"],
+  "validators": ["scripts/check_source.py"],
+  "tests": [],
+  "runtime_evidence": []
+}

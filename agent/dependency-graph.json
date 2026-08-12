@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "edges": [
+    ["client", "framework"],
+    ["client", "game-engine"],
+    ["verification", "framework"],
+    ["verification", "client"],
+    ["verification", "game-engine"],
+    ["verification", "server"]
+  ]
+}

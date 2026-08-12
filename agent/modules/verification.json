@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "module_id": "verification",
+  "purpose": "Repository-local metadata and source-level audit checks.",
+  "paths": [
+    {"path": "scripts/validate_agent_contracts.py", "lifecycle": "implemented", "provenance": "authored"},
+    {"path": "scripts/check_source.py", "lifecycle": "implemented", "provenance": "authored"}
+  ],
+  "contracts": [],
+  "validators": ["python scripts/validate_agent_contracts.py", "python scripts/check_source.py", "go test ./..."],
+  "tests": [],
+  "runtime_evidence": []
+}

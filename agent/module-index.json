@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "modules": {
+    "framework": {
+      "status": "implemented",
+      "roots": ["public/framework/pushok/"],
+      "entrypoints": ["public/framework/pushok/index.js"],
+      "manifest": "agent/modules/framework.json",
+      "dependencies": []
+    },
+    "client": {
+      "status": "implemented",
+      "roots": ["public/js/"],
+      "entrypoints": ["public/js/app.js"],
+      "manifest": "agent/modules/client.json",
+      "dependencies": ["framework", "game-engine"]
+    },
+    "game-engine": {
+      "status": "implemented",
+      "roots": ["public/js/game/"],
+      "entrypoints": ["public/js/game/engine.js"],
+      "manifest": "agent/modules/game-engine.json",
+      "dependencies": []
+    },
+    "server": {
+      "status": "implemented",
+      "roots": ["server/"],
+      "entrypoints": ["server/server.go"],
+      "manifest": "agent/modules/server.json",
+      "dependencies": []
+    },
+    "verification": {
+      "status": "implemented",
+      "roots": ["scripts/"],
+      "entrypoints": ["scripts/validate_agent_contracts.py", "scripts/check_source.py"],
+      "manifest": "agent/modules/verification.json",
+      "dependencies": ["framework", "client", "game-engine", "server"]
+    }
+  }
+}
